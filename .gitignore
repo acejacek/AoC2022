@@ -6,3 +6,4 @@
 *.dSYM
 mandelbrot
 /bin/*
+/input/temp.txt

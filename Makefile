@@ -1,4 +1,4 @@
-OUTPUT = day1
+OUTPUT = day3
 
 BINDIR = ./bin/
 
@@ -14,9 +14,9 @@ debug: exec
 run:	${OUTPUT}
 	${BINDIR}${OUTPUT}
 
-day1: day1.c
-	cc ${CFLAGS} -o ${BINDIR}day1 day1.c ${LFLAGS}
+${OUTPUT}: ${OUTPUT}.c
+	cc ${CFLAGS} -o ${BINDIR}${OUTPUT} ${OUTPUT}.c ${LFLAGS}
 
 clean:
-	rm -f *.o
+	rm -f *.o ${BINDIR}${OUTPUT}
 	rm -rf *.dSYM

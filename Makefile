@@ -1,5 +1,7 @@
 OUTPUT = day1
 
+BINDIR = ./bin/
+
 CFLAGS = -Wall -Werror -Wextra -pedantic
 # LFLAGS = -lm
 
@@ -10,10 +12,10 @@ debug: CFLAGS += -DDEBUG -g
 debug: exec
 
 run:	${OUTPUT}
-	./${OUTPUT}
+	${BINDIR}${OUTPUT}
 
 day1: day1.c
-	cc ${CFLAGS} -o day1 day1.c ${LFLAGS}
+	cc ${CFLAGS} -o ${BINDIR}day1 day1.c ${LFLAGS}
 
 clean:
 	rm -f *.o

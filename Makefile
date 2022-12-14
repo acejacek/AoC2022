@@ -1,4 +1,4 @@
-OUTPUT = day5
+OUTPUT = day6
 
 BINDIR = ./bin/
 
@@ -9,7 +9,7 @@ all: CFLAGS += -O2
 all: ${OUTPUT}
 
 debug: CFLAGS += -DDEBUG -g
-debug: exec
+debug: ${OUTPUT}
 
 run:	${OUTPUT}
 	${BINDIR}${OUTPUT}

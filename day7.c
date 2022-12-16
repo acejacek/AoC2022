@@ -12,7 +12,7 @@ typedef struct List List;
 typedef struct Dir Dir;
 
 struct Dir {
-    char name[100];
+    char* name;
     int totalSize;
     Dir* parent;
     int elementsCount;
@@ -21,7 +21,7 @@ struct Dir {
 
 struct List {
     bool file;
-    char name[100];
+    char* name;
     int size;
     Dir* dir;
 };
@@ -41,7 +41,7 @@ Dir* initiateDir(Dir* parent, const char* name)
     d->elementsCount = 0;
     d->elements = NULL;
     d->totalSize = 0;
-    strcpy(d->name, name);
+    d->name = strdup(name);
 
     return d;
 }
@@ -53,7 +53,7 @@ void populateDir(Dir* d, int size, char* name)
     assert(d->elements);
 
     List* newEl = d->elements + d->elementsCount - 1; // at the end of list
-    strcpy(newEl->name, name);
+    newEl->name = strdup(name);
     newEl->size = size;
     if (size == 0)
     {

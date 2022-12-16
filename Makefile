@@ -1,11 +1,11 @@
-OUTPUT = day6
+OUTPUT = day7
 
 BINDIR = ./bin/
 
 CFLAGS = -Wall -Werror -Wextra -pedantic
 # LFLAGS = -lm
 
-all: CFLAGS += -O2
+all: CFLAGS += -O0
 all: ${OUTPUT}
 
 debug: CFLAGS += -DDEBUG -g

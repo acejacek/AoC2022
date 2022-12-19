@@ -11,6 +11,7 @@ struct point
     char picture;
     int distance;
     int previous;
+    bool startTested;
 };
 
 typedef struct map
@@ -19,9 +20,6 @@ typedef struct map
     int size;
     int width;
     int height;
-    int x;
-    int y;
-    int shortestTrip;
 } Map;
 
 void printMap(Map* m)
@@ -36,122 +34,18 @@ void printMap(Map* m)
     }
 }
 
-void printDistances(Map* m)
-{
-    for (int y = 0; y < m->height; ++y)
-    {
-        for (int x = 0; x < m->width; ++x)
-        {
-            printf("%d\t", m->data[y * m->width + x].distance);
-        }
-        printf("\n");
-    }
-}
-
-void findStart(Map* m)
-{
-    for (int y = 0; y < m->height; ++y)
-    {
-        for (int x = 0; x < m->width; ++x)
-        {
-            if (m->data[y * m->width + x].picture == 'S')
-            {
-                m->x = x;
-                m->y = y;
-                return;
-            }
-        }
-    }
-
-    fprintf(stderr, "Start not found\n");
-    exit(1);
-}
-
-void findRouteBruteforce(Map* m, int step)
-{
-    int address = m->y * m->width + m->x;
-    char myElevation = m->data[address].elevation;
-    if (m->data[address].picture == 'E')
-    {
-        if (!m->shortestTrip || m->shortestTrip > step) m->shortestTrip = step;
-        return;
-    }
-
-    if (m->shortestTrip && step > m->shortestTrip) return;  // this is already longer than best score
-
-    m->data[address].visited = true;
-
-    if (m->x < m->width -1)
-    {
-        if (!m->data[address + 1].visited)
-        {
-            if (m->data[address + 1].elevation <= myElevation + 1)
-            {
-                m->x++;
-                findRouteBruteforce(m, step + 1);
-                m->x--;
-            }
-        }
-    }
-
-    if (m->x > 0)
-    {
-        if (!m->data[address - 1].visited)
-        {
-            if (m->data[address - 1].elevation <= myElevation + 1)
-            {
-                m->x--;
-                findRouteBruteforce(m, step + 1);
-                m->x++;
-            }
-        }
-    }
-
-    if (m->y > 0)
-    {
-        if (!m->data[address - m->width].visited)
-        {
-            if (m->data[address - m->width].elevation <= myElevation + 1)
-            {
-                m->y--;
-                findRouteBruteforce(m, step + 1);
-                m->y++;
-            }
-        }
-    }
-
-    if (m->y < m->height - 1)
-    {
-        if (!m->data[address + m->width].visited)
-        {
-            if (m->data[address + m->width].elevation <= myElevation + 1)
-            {
-                m->y++;
-                findRouteBruteforce(m, step + 1);
-                m->y--;
-            }
-        }
-    }
-
-    m->data[address].visited = false;
-    return;
-}
-
 void examineNeighbour(Map* m, int winner, int target)
 {
     if (m->data[target].visited) return;
 
-    char myElevation = m->data[winner].elevation;
-    int myDistance = m->data[winner].distance;
+    if (m->data[target].elevation > m->data[winner].elevation + 1) return;  // target to high
 
-    if (m->data[target].elevation <= myElevation + 1)
+    int newDistance = m->data[winner].distance + 1;
+
+    if (m->data[target].distance > newDistance)
     {
-        int newDistance = myDistance + 1;
-        if (m->data[target].distance > newDistance)
-        {
-            m->data[target].distance = newDistance;
-            m->data[target].previous = winner;
-        }
+        m->data[target].distance = newDistance;
+        m->data[target].previous = winner;
     }
 }
 
@@ -210,14 +104,22 @@ int countRoute(Map* m)
     int step = 0;
     while (m->data[i].picture != 'S')
     {
+        if (m->data[i].distance == INT_MAX) return -1;  // start not found
         step++;
         i = m->data[i].previous;
-//        printf("%c-", m->data[i].picture);
+        //printf("%d ", m->data[i].distance);
     }
-
-    printf("\n");
-
     return step;
+}
+
+void resetMap(Map* m)
+{
+    for (int i = 0; i < m->size; ++i)
+    {
+        m->data[i].distance = INT_MAX;
+        m->data[i].visited = false;
+        if (m->data[i].picture == 'S') m->data[i].picture = 'a';
+    }
 }
 
 FILE* openFile(const char* filename)
@@ -240,7 +142,6 @@ int main(void)
         .size = 0,
         .width = 0,
         .height = 0,
-        .shortestTrip = 0,
     };
 
     char c;
@@ -260,6 +161,7 @@ int main(void)
         map.data[map.size - 1].picture = c;
         map.data[map.size - 1].visited = false;
         map.data[map.size - 1].distance = INT_MAX;
+        map.data[map.size - 1].startTested = false;
 
         if (c == 'E')
             map.data[map.size - 1].elevation = 'z';
@@ -274,18 +176,59 @@ int main(void)
 
     printMap(&map);
 
-    findStart(&map);
-
-    //findRouteBruteforce(&map, 0);
-    //printf("Shortest walk took %d steps.\n", map.shortestTrip);
-
     findRouteDijkstra(&map);
 
-    //printDistances(&map);
+    printf("Shortest walk from S to E took %d steps.\n", countRoute(&map));
 
-    printf("Shortest walk took %d steps.\n", countRoute(&map));
+    // part 2
+
+    int shortestPossible = INT_MAX;
+
+    bool allStartsExamined = false;
+
+    while (!allStartsExamined)
+    {
+        allStartsExamined = true;
+
+        resetMap(&map);
+
+        // find starting point
+        for (int i = 0; i < map.size; ++i)
+        {
+            if (map.data[i].elevation != 'a') continue;
+            if (map.data[i].startTested) continue;
+
+            allStartsExamined = false;
+
+            map.data[i].startTested = true;
+            map.data[i].picture = 'S';
+            map.data[i].distance = 0;
+
+            findRouteDijkstra(&map);
+
+            int distance = countRoute(&map);
+            if (distance < 0)
+            {
+                putc('x', stdout);
+                fflush(stdout);
+                break;
+            }
+
+            if (shortestPossible > distance)
+            {
+                shortestPossible = distance;
+                putc('+', stdout);
+            }
+            else putc('.', stdout);
+
+            fflush(stdout);
+
+            break;
+        }
+    }
+
+    printf("\n\nShortest walk from closest 'a' to E is %d steps.\n", shortestPossible);
 
     return 0;
 }
-
 

@@ -11,7 +11,6 @@ struct point
     char picture;
     int distance;
     int previous;
-    bool startTested;
 };
 
 typedef struct map
@@ -24,14 +23,12 @@ typedef struct map
 
 void printMap(Map* m)
 {
-    for (int y = 0; y < m->height; ++y)
+    for (int i = 0; i < m->size; ++i)
     {
-        for (int x = 0; x < m->width; ++x)
-        {
-            printf("%c", m->data[y * m->width + x].picture);
-        }
-        printf("\n");
+        if (i % m->width == 0) printf("\n");
+        putchar(m->data[i].picture);
     }
+    printf("\n");
 }
 
 void examineNeighbour(Map* m, int winner, int target)
@@ -102,12 +99,10 @@ int countRoute(Map* m)
 
     // walk backwards to start
     int step = 0;
-    while (m->data[i].picture != 'S')
+    for (;m->data[i].picture != 'S'; ++step)
     {
         if (m->data[i].distance == INT_MAX) return -1;  // start not found
-        step++;
         i = m->data[i].previous;
-        //printf("%d ", m->data[i].distance);
     }
     return step;
 }
@@ -161,7 +156,6 @@ int main(void)
         map.data[map.size - 1].picture = c;
         map.data[map.size - 1].visited = false;
         map.data[map.size - 1].distance = INT_MAX;
-        map.data[map.size - 1].startTested = false;
 
         if (c == 'E')
             map.data[map.size - 1].elevation = 'z';
@@ -178,53 +172,39 @@ int main(void)
 
     findRouteDijkstra(&map);
 
-    printf("Shortest walk from S to E took %d steps.\n", countRoute(&map));
+    printf("Shortest walk from S to E takes %d steps.\n", countRoute(&map));
 
     // part 2
 
     int shortestPossible = INT_MAX;
 
-    bool allStartsExamined = false;
+    resetMap(&map);
 
-    while (!allStartsExamined)
+    // scan all possible starting points
+    for (int i = 0; i < map.size; ++i)
     {
-        allStartsExamined = true;
+        if (map.data[i].elevation != 'a') continue;
 
-        resetMap(&map);
+        map.data[i].picture = 'S';
+        map.data[i].distance = 0;
 
-        // find starting point
-        for (int i = 0; i < map.size; ++i)
+        findRouteDijkstra(&map);
+
+        int distance = countRoute(&map);
+
+        if (distance < 0) goto reset;     // no way out. probably does not need resetting the map
+
+        if (shortestPossible > distance)
         {
-            if (map.data[i].elevation != 'a') continue;
-            if (map.data[i].startTested) continue;
-
-            allStartsExamined = false;
-
-            map.data[i].startTested = true;
-            map.data[i].picture = 'S';
-            map.data[i].distance = 0;
-
-            findRouteDijkstra(&map);
-
-            int distance = countRoute(&map);
-            if (distance < 0)
-            {
-                putc('x', stdout);
-                fflush(stdout);
-                break;
-            }
-
-            if (shortestPossible > distance)
-            {
-                shortestPossible = distance;
-                putc('+', stdout);
-            }
-            else putc('.', stdout);
-
-            fflush(stdout);
-
-            break;
+            shortestPossible = distance;
+            putchar('+');
         }
+        else
+            putchar('.');
+
+        fflush(stdout);
+reset:
+        resetMap(&map);
     }
 
     printf("\n\nShortest walk from closest 'a' to E is %d steps.\n", shortestPossible);

@@ -1,4 +1,4 @@
-OUTPUT = day11
+OUTPUT = day12
 
 BINDIR = ./bin/
 

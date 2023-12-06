@@ -7,3 +7,5 @@
 mandelbrot
 /bin/*
 /input/temp.txt
+a.out
+*.test

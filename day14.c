@@ -5,7 +5,7 @@
 #define WIDTH 1000
 #define HEIGHT 200
 
-#define INPUT_FILE "day14.txt"
+#define INPUT_FILE "input/day14.txt"
 
 #define PART 1
 

@@ -11,15 +11,15 @@ typedef struct
     int y;
     int bx;
     int by;
-    long int distance;
+    int distance;
 } Sensor;
 
-long int manhattan_distance(int p1, int p2, int q1, int q2)
+int manhattan_distance(const int p1, const int p2, const int q1, const int q2)
 {
     int dx = abs(p1 - q1);
     int dy = abs(p2 - q2);
 
-    return (long int)dx + (long int)dy;
+    return dx + dy;
 }
 
 void update_distance(Sensor* s)
@@ -75,68 +75,57 @@ int main(void)
         if (max_x < sensors[counter].bx) max_x = sensors[counter].bx;
         if (max_distance < sensors[counter].distance) max_distance = sensors[counter].distance;
     }
-    for (int i = 0; i < counter; ++i)
-        printf("X: %d\t Y: %d\t bx: %d\t by: %d,\t dist: %ld\n",
-                sensors[i].x,
-                sensors[i].y,
-                sensors[i].bx,
-                sensors[i].by,
-                sensors[i].distance);
-
-    printf("min: %d, max %d, dist: %d\n",min_x, max_x, max_distance);
 
     int locations = 0;
     const int y = 2000000;
     //int y = 10;
     for (int x = min_x - max_distance; x <= max_x + max_distance; ++x)
-    {
         for (int s = 0; s < counter; ++s)
         {
             // check if there is no beacon already
             if (x == sensors[s].bx && y == sensors[s].by) break;
 
-            long int dist = manhattan_distance(x, y, sensors[s].x, sensors[s].y);
+            int dist = manhattan_distance(x, y, sensors[s].x, sensors[s].y);
             if (sensors[s].distance >= dist)
             {
                 locations++;
                 break;
             }
         }
-    }
     
     printf("Number of locations, where beacon cannot be present: %d\n", locations);
 
-    //const int limit = 20;
     const int limit = 4000000;
     for (int x = 0; x <= limit; ++x)
-    {
         for (int y = 0; y <= limit; ++y)
         {
             int good = 1;
             for (int s = 0; s < counter; ++s)
             {
-                // check if there is no beacon already
-                if (x == sensors[s].bx && y == sensors[s].by)
-                {
-                    good = 0;
-                    break;
-                }
-
-                long int dist = manhattan_distance(x, y, sensors[s].x, sensors[s].y);
-
+                int dist = manhattan_distance(x, y, sensors[s].x, sensors[s].y);
                 if (sensors[s].distance >= dist)
                 {
+                    // I'm inside the ball
                     good = 0;
+                    if (y < sensors[s].y) // I'm left to the sensor
+                    {
+                        // I can already skip right to mirror position
+                        y += 2 * (sensors[s].y - y);
+                    }
+                    // now I'm right to the sensor
+                    // add diff of distances to stand on right outer edge of ball
+                    y += sensors[s].distance - dist;
+
+                    // no need to check other sensors
                     break;
                 }
             }
-            if (good)
+            if (good) // my distance is larger than balls of all sensors
             {
-                printf("Good location X: %d Y: %d tuning: %d\n", x, y, 4000000 * x + y);
+                printf("Good location X: %d Y: %d; Tuning: %zu\n", x, y, (size_t) 4000000 * x + y);
                 goto cleanup;
             }
         }
-    }
 
 cleanup:
     if (input) fclose(input);
